@@ -12,70 +12,66 @@
 			       
             <canvas id="canvas" width="100%" height="100%"></canvas>
             <canvas id="tpgraph" width="100%" height="100%"></canvas>
-			<div id="logo"> <a href="http://fb.me/midanAAST"><img src="http://yoga1290.appspot.com/midan/logo.png" /></a></div>
+			<div id="logo"> <a href="http://fb.me/midanAAST"><img src="http://yogash1290.appspot.com/midan/logo.png" /></a></div>
 			
         <div id="info" class="info"></div>
 <script>
-    /**
+/**
      @author    yoga1290@gmail.com
-     @see       http://about.me/yoga1290
      */
-     
     /*cache*/
-
-	var midan4sqr="<a href='https://foursquare.com/oauth2/authenticate?client_id=KMZM03DCNBFOS1UDA3LVR5OBGLQQ5IVPZTOJG4XVSF2AZ43E&response_type=code&redirect_uri=http://yoga1290.appspot.com/oauth/midan/foursquare/callback/'><img src='https://playfoursquare.s3.amazonaws.com/press/logo/connect-blue.png'/ ></a>";
-    var animate_speed=1;        
-                        function        drawChart(curInd,r,R)
+	var animate_speed=1;        
+    var tmp_checkinsCount=[],centerX,centerY;
+            function init()
             {
- //              console.log("drawChart("+curInd+","+r+","+R+");");
+                tmp_checkinsCount=[];
+                for(i=0;i<checkinsCount.length;i++)
+                    tmp_checkinsCount.push([checkinsCount[i],i]);
+                tmp_checkinsCount.sort();
+
+                centerX = window.screen.width / 2;
+                centerY = window.screen.height / 2;
+            }
+            function        drawChart(curInd,R)
+            {
                 var i;
                 var canvas = document.getElementById("canvas");
-                
                 canvas.style.top=0;
                 canvas.style.left=0;
                 canvas.width=window.screen.width;
                 canvas.height=window.screen.height;
-                
+
                 var context = canvas.getContext("2d");
-                var centerX = canvas.width / 2;
-                var centerY = canvas.height / 2;
-                var radius = Math.min(centerX,centerY);
                 var startingAngle,endingAngle;
-                var lastAngle = 0;
-                var counterclockwise = false;
-                
-                checkinsCount.sort();
-                // Draw the 1s with bigger area first
+                var lastAngle = 0;            
+
+//                checkinsCount.sort();
+
+                // Draw the 1s w bigger area first
                 for(i=checkinsCount.length-1;i>=0;i--)
                 {
-                    if(i==curInd)
-                    radius=R;
-                    else
-                    radius=r;
-                    
                     context.beginPath();
                     startingAngle=lastAngle;
-                    endingAngle=startingAngle+Math.PI*2*(checkinsCount[i]/max_checkin);
+                    endingAngle=startingAngle+Math.PI*2*(tmp_checkinsCount[i][0]/max_checkin);
                     
-                    context.arc(centerX, centerY, radius, startingAngle, endingAngle, counterclockwise);
+                    context.arc(centerX, centerY, R, startingAngle, endingAngle, false);
+//                    context.arc(centerX, centerY, R, startingAngle, endingAngle, counterclockwise);
                     context.closePath();
                     
                     
-                    context.fillStyle=color[i];
+                    context.fillStyle=color[tmp_checkinsCount[i][1]];
                     context.fill();
                     
                     //triangle
                     context.beginPath(); // begin custom shape
                     context.moveTo(centerX, centerY);
-                    context.lineTo(centerX+Math.cos(startingAngle)*radius ,centerY+Math.sin(startingAngle)*radius);
-                    context.lineTo(centerX+Math.cos(endingAngle)*radius ,centerY+Math.sin(endingAngle)*radius);
+                    context.lineTo(centerX+Math.cos(startingAngle)*R ,centerY+Math.sin(startingAngle)*R);
+                    context.lineTo(centerX+Math.cos(endingAngle)*R ,centerY+Math.sin(endingAngle)*R);
                     context.lineTo(centerX,centerY);
                     context.closePath();
                     context.fill();
                     lastAngle=endingAngle;
                 }
-drawTimepiece(curInd,r);
-                //        window.onresize=drawChart();
             }
             
             
@@ -111,22 +107,12 @@ drawTimepiece(curInd,r);
                 for(i=0;i<12;i++)
                 {
                     //12 at [0] (as 12%12==0)
-                    //9AM at 0�
+                    //9AM at 0deg
                     radius=timedata[curInd][i]*R/max;
                     
                     
                     startingAngle=lastAngle;
                     endingAngle=startingAngle+Math.PI*2/12;//12 hour graph
-                    
-
-                    //context.fillStyle=color[curInd];//"#0FF00F";
-                    
-                    
-//                    if(timedata[curInd][i]>0)
-  //                  {
-    //                		context.fillStyle="#0000FF";
-      //              		context.fillText(	(	i+":00 ~ "+((i+1)%12)+":00 ("+timedata[curInd][i]+")"	)	,centerX+Math.cos(startingAngle)*radius ,centerY+Math.sin(startingAngle)*radius	);
-        //            	}
                     	
                     	context.fillStyle=color[curInd];
                     	
@@ -168,12 +154,14 @@ drawTimepiece(curInd,r);
                 {
                     if(r<Math.min(canvas.width / 2,canvas.height / 2))
                     {
-                        drawChart(i,(Math.min(canvas.width/2,canvas.height/2)-r),r+animate_speed);
+                        drawChart(i,r+animate_speed);
+                        drawTimepiece(i,   (Math.min(canvas.width/2,canvas.height/2)-r)    );
                         setTimeout("animate("+i+","+(r+animate_speed)+",1);",50);
                     }
                     else
                     {
-                        drawChart(i,(Math.min(canvas.width/2,canvas.height/2)-r+animate_speed),r-animate_speed);
+                        drawChart(i,r-animate_speed);
+                        drawTimepiece(i,   (Math.min(canvas.width/2,canvas.height/2)-r+animate_speed)    );
                             setTimeout("animate("+i+","+(r-animate_speed)+",0);",1000);
                     }
                 }
@@ -182,27 +170,208 @@ drawTimepiece(curInd,r);
                     if(r<=0)
                     {
                     		i=(i+1)%checkinsCount.length;
-                    		document.getElementById("info").innerHTML="<table><tr><td align='center'><img src='"+ppic[i]+"'/ ></td></tr><tr><td align='center'><a href='http://foursquare.com/user/"+userId[i]+"'>"+username[i]+"</a> ("+checkinsCount[i]+")<br>"+midan4sqr+"</td></tr></table>";
+                    		// document.getElementById("info").innerHTML="<table><tr><td align='center'><img src='"+ppic[i]+"'/ ></td></tr><tr><td align='center'><a href='http://foursquare.com/user/"+userId[i]+"'>"+username[i]+"</a> ("+checkinsCount[i]+")<br>"+midan4sqr+"</td></tr></table>";
                     		setTimeout("animate("+i+","+(r-animate_speed)+",1);",2000);
                     	}
                     	else
                     	{
-	                    drawChart(i,(Math.min(canvas.width/2,canvas.height/2)-r+animate_speed),r-animate_speed);
+	                       drawChart(i,r-animate_speed);
+                           drawTimepiece(i,   (Math.min(canvas.width/2,canvas.height/2)-r+animate_speed)    );
                     		setTimeout("animate("+i+","+(r-animate_speed)+",0);",50);
                     	}
                 }
             
             }
+
+
+
+            function        preShare()
+            {
+            		if(facebook_access_token==null || facebook_access_token.length<=0)
+            		{
+            			top.location.href=location.protocol+"//www.facebook.com/dialog/oauth?client_id=531537050299704&redirect_uri=https://yogash1290.appspot.com/dostour/alex4sqr/oauth/facebook/&scope=publish_stream,publish_actions&state="+foursquare_access_token;
+            			return;
+            		}	
+                var i;
+                var canvas = document.getElementById("share");
+                
+                canvas.style.top=0;
+                canvas.style.left=0;
+                canvas.width=window.screen.width;
+                canvas.height=window.screen.height;
+                
+                var context = canvas.getContext("2d");
+                var centerX = canvas.width / 2;
+                var centerY = canvas.height / 2;
+                var startingAngle,endingAngle;
+                var lastAngle = 0;
+                var counterclockwise = false;
+                var R=Math.min(canvas.width,canvas.height)>>1;
+
+                tmp_checkinsCount=[];
+                for(i=0;i<checkinsCount.length;i++)
+                    tmp_checkinsCount.push([checkinsCount[i],i]);
+                tmp_checkinsCount.sort();
+
+
+                // drawChart:
+            //                checkinsCount.sort();
+                // Draw the 1s w bigger area first
+                for(i=checkinsCount.length-1;i>=0;i--)
+                {
+                    context.beginPath();
+                    startingAngle=lastAngle;
+                    endingAngle=startingAngle+Math.PI*2*(tmp_checkinsCount[i][0]/max_checkin);
+//                    endingAngle=startingAngle+Math.PI*2*(checkinsCount[i]/max_checkin);
+                    
+                    context.arc(centerX, centerY, R, startingAngle, endingAngle, false);
+                    context.closePath();
+                    
+                    if(curId==i)
+                        context.fillStyle=color[i];
+                    else context.fillStyle="BLUE";
+                    context.fill();
+                    
+                    //triangle
+                    context.beginPath(); // begin custom shape
+                    context.moveTo(centerX, centerY);
+                    context.lineTo(centerX+Math.cos(startingAngle)*R ,centerY+Math.sin(startingAngle)*R);
+                    context.lineTo(centerX+Math.cos(endingAngle)*R ,centerY+Math.sin(endingAngle)*R);
+                    context.lineTo(centerX,centerY);
+                    context.closePath();
+                    context.fill();
+                    lastAngle=endingAngle;
+                }
+
+            //drawTimepiece:
+                var radius = R*(2/3);
+                var startingAngle,endingAngle;
+                var lastAngle =1.5*Math.PI;//as 12:00 starts at [0]//0;
+                var counterclockwise = false;
+                
+                curInd=curId;
+
+                context.setLineWidth=100;
+                context.strokeStyle="#0000FF";
+                var max=timedata[curInd][0];
+                for(i=0;i<12;i++)
+                    max=Math.max(max,timedata[curInd][i]);
+                for(i=0;i<12;i++)
+                {
+                    //12 at [0] (as 12%12==0)
+                    //9AM at 0deg
+                    radius=(timedata[curInd][i]*R/max)>>1;
+                    
+                    
+                    startingAngle=lastAngle;
+                    endingAngle=startingAngle+Math.PI*2/12;//12 hour graph
+                        
+                        context.fillStyle=color[curInd];
+                        
+                    //triangle
+                    
+                    context.beginPath(); // begin custom shape
+                    context.moveTo(centerX, centerY);
+                    context.lineTo(centerX+Math.cos(startingAngle)*radius ,centerY+Math.sin(startingAngle)*radius);
+                    context.lineTo(centerX+Math.cos(endingAngle)*radius ,centerY+Math.sin(endingAngle)*radius);
+                    context.lineTo(centerX,centerY);
+                    context.closePath();
+                    
+                    
+                    
+                    context.fillStyle=color[curInd];
+                    context.fill();
+                    context.stroke();
+
+                    context.beginPath();
+                    context.arc(centerX+Math.cos(startingAngle)*radius ,centerY+Math.sin(startingAngle)*radius, 5, 0, Math.PI<<1, counterclockwise);
+                    context.closePath();
+                    context.fill();
+                    if(timedata[curInd][i]>0)
+                    {
+                         context.fillStyle="#FFFFFF";
+                            context.fillText(   (   i+":00 ~ "+((i+1)%12)+":00 ("+timedata[curInd][i]+")"   )   ,centerX+Math.cos(startingAngle)*radius ,centerY+Math.sin(startingAngle)*radius );
+                        }
+                        
+                        context.fillStyle=color[curInd];
+                        
+                    lastAngle=endingAngle;
+                }
+
+                
+
+                context.drawImage(img_logo,centerX-(img_logo.width>>1),centerY-(img_logo.height>>1));
+
+				try{
+						var data=document.getElementById("share").toDataURL();
+						var mimeType="image"+data.substring(data.indexOf("/"),data.indexOf("/")+4);
+						data=data.substring(data.indexOf(",")+1,data.length);
+				        blob = dataURItoBlob(data,mimeType);
+				}catch(e){console.log("Blob"+e);}
+				var fd = new FormData();
+				fd.append("source", blob);
+				fd.append("message","#حزب_الدستور #alDostour");
+
+				$.ajax({
+			        url:"https://graph.facebook.com/me/photos?access_token=" + facebook_access_token,
+			        type:"POST",
+			        data:fd,
+			        processData:false,
+			        contentType:false,
+			        success:function(data)
+			        {
+						$("#share").hide();
+			        },
+			        error:function(shr,status,data){
+			            console.log("error " + data + " Status " + shr.status);
+			        },
+			        complete:function(){
+			            console.log("Ajax Complete");
+			        }
+			    });
+			    
+            }
+
+function dataURItoBlob(dataURI,mime) {
+    // convert base64 to raw binary data held in a string
+    // doesn't handle URLEncoded DataURIs
+
+    var byteString = window.atob(dataURI);
+
+    // separate out the mime component
+
+
+    // write the bytes of the string to an ArrayBuffer
+    //var ab = new ArrayBuffer(byteString.length);
+    var ia = new Uint8Array(byteString.length);
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    // write the ArrayBuffer to a blob, and you're done
+    var blob = new Blob([ia], { type: mime });
+
+    return blob;
+}
             
-            document.getElementById("logo").style.left=(window.screen.width-161)>>1;
-            document.getElementById("logo").style.top=(window.screen.height-147)>>1;
-            
+// /*
+            var img_logo=new Image();
+            img_logo.onload=function(){
+
+                document.getElementById("logo").style.left=(window.screen.width-img_logo.width)>>1;
+                document.getElementById("logo").style.top=(window.screen.height-img_logo.height)>>1;
+                document.getElementById("logo").appendChild(img_logo);
+            };
+            img_logo.src="http://yogash1290.appspot.com/midan/logo.png";
+        
+// */            
             document.getElementById("info").style.left=(window.screen.width-110)>>1;
             document.getElementById("info").style.top=(window.screen.height-200);
             
             animate_speed=Math.min(window.screen.width,window.screen.height)*5/100;
-            if(userId.length>0)
-				document.getElementById("info").innerHTML="<table><tr><td align='center'><img src='"+ppic[0]+"'/ ></td></tr><tr><td align='center'><a href='http://foursquare.com/user/"+userId[0]+"'>"+username[0]+"</a> ("+checkinsCount[0]+")<br>"+midan4sqr+"</td></tr></table>";
+    //         if(userId.length>0)
+				// document.getElementById("info").innerHTML="<table><tr><td align='center'><img src='"+ppic[0]+"'/ ></td></tr><tr><td align='center'><a href='http://foursquare.com/user/"+userId[0]+"'>"+username[0]+"</a> ("+checkinsCount[0]+")<br>"+midan4sqr+"</td></tr></table>";
+            init();
             animate(0,0,1);
             </script>
     </body>

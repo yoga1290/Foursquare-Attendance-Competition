@@ -1,0 +1,181 @@
+<html>
+    <head>
+        <title>Update</title>
+    </head>
+    <body>
+        <div id="info" class="info"></div>
+        <div id="prv" class="info"></div>
+        <script>
+            /**
+             @author    yoga1290@gmail.com
+             */
+            
+            var access_token=null; //cached in DB
+            
+            var userId=[];
+            var username=[];
+            var ppic=[];
+            var timedata=[];
+            
+            var checkinsCount=[];
+            
+            var color=[],debug;
+            
+            var max_checkin=0;
+            function load(i,o)
+            {
+                document.getElementById("info").innerHTML="Loading user#"+i;
+                document.getElementById("info").style.top=0;
+                document.getElementById("info").style.left=0;
+                
+                var xhr=new XMLHttpRequest();
+                var today=new Date();
+                var j=0,colorsUsed=[],curColor="";
+                var v=today.getYear()+"";
+                v+=((today.getMonth()+"").length<2) ? ("0"+today.getMonth()):today.getMonth();
+                v+=((today.getDate()+"").length<2) ? ("0"+today.getDate()):today.getDate();
+                
+                curColor="#"+(Math.floor(Math.random()*parseInt("FFFFFF",16))).toString(16).toUpperCase();
+                while(colorsUsed[curColor]!=null)
+                curColor="#"+(Math.floor(Math.random()*parseInt("FFFFFF",16))).toString(16).toUpperCase();
+                
+                colorsUsed[curColor]=true;
+                color[i]=curColor;
+                console.log("connecting to https://api.foursquare.com/v2/users/self/checkins?offset="+o+"&beforeTimestamp=20130216&v="+v+"&oauth_token="+access_token[i]);
+                //load checkins
+                xhr.open("GET","https://api.foursquare.com/v2/users/self/checkins?offset="+o+"&afterTimestamp=20130216&oauth_token="+access_token[i]+"&v="+v);
+                xhr.onload=function(){
+                    var checkins=debug=JSON.parse(this.responseText)['response']['checkins']['items'];
+                    
+                    if(i>=checkinsCount.length)
+                    checkinsCount.push(0);
+
+                    if(i>=timedata.length)
+                    timedata.push([0,0,0,0,0,0 ,0,0,0,0,0,0]);
+
+                    
+                    try{
+                    for(j=0;j<checkins.length;j++)
+                    {
+                        if((checkins[j]['venue']['id']+"")!="4c453ea88c1f20a13c963d99")//AAST  continue; //AAST
+                        var when=new Date(checkins[j]['createdAt']*1000);
+                        console.log(when+"\t ["+(when.getHours()%12)+"]++");
+                        
+                        timedata[i][ (when.getHours()+12-1) %12 ]++;
+                        
+                        //      if(when.getHours()<=8 && when.getMinutes()<=30)
+                        checkinsCount[i]++;
+                        
+                        //info+="<a href='https://foursquare.com/v/"+v[i]['venue']['id']+"'><font color='"+curColor+"'>"+v[i]['venue']['name']+"</font></a>";
+                    }
+                    }catch(e){}
+                    max_checkin=Math.max(max_checkin,checkinsCount[i]);
+                    
+                    //                     drawChart(i);
+                    if(j>0) load(i,o+j);
+                    else
+                    	load2(i);
+                };
+                xhr.send();
+            }
+            
+            function load2(i)
+            {
+                document.getElementById("info").innerHTML="Loading ppic,userId,username # "+i;
+                document.getElementById("info").style.top=0;
+                document.getElementById("info").style.left=0;
+                
+                var xhr=new XMLHttpRequest();
+                var today=new Date();
+                var v=today.getYear()+"";
+                v+=((today.getMonth()+"").length<2) ? ("0"+today.getMonth()):today.getMonth();
+                v+=((today.getDate()+"").length<2) ? ("0"+today.getDate()):today.getDate();
+                
+                
+                
+                xhr.open("GET","https://api.foursquare.com/v2/users/self?oauth_token="+access_token[i]+"&v="+v);
+                xhr.onload=function(){
+                    var info=debug=JSON.parse(this.responseText)['response']['user'];
+                    
+                    userId.push(info['id']);
+                    username.push(info['firstName']+" "+info['lastName']);
+                    ppic.push(info['photo']);
+                    //load checkins of another person
+                    if(i+1<access_token.length) load(i+1,0);
+                    else{                             alert("done loading");postUpdates();}
+                };
+                xhr.send();
+            }
+            
+            function postUpdates()
+            {
+                var xhr=new XMLHttpRequest();
+                xhr.open("POST",redirectURI,true);
+                xhr.onload=function(){
+                    alert(this.responseText);
+                    var cached=this.responseText;
+                    
+                    	var xhr2=new XMLHttpRequest();
+                    	xhr2.open("GET",location.protocol+"//yogash1290.appspot.com/midan/4sqr.html");
+                    	xhr2.onload=function(){
+                    		document.getElementById("prv").innerHTML=this.responseText.replace("/*cache*/",cached);
+                    		
+                    		document.write(this.responseText.replace("/*cache*/",cached+"; var foursquare_access_token='"+foursquare_access_token+"'; var facebook_access_token='"+facebook_access_token+"';") );
+                    	};
+                    	xhr2.send();
+                    	
+                };
+                var res="";
+                if(userId.length>0){
+
+                    res+="var userId=['"+userId[0];
+                    for(i=1;i<userId.length;i++)
+                        res+="','"+userId[i];
+                    res+="'];\n";
+                    
+                    res+="var color=['"+color[0];
+                    for(i=1;i<color.length;i++)
+                        res+="','"+color[i];
+                    res+="'];\n";
+                    
+//                    res+="var username=['"+username[0];
+//                    for(i=1;i<username.length;i++)
+//                        res+="','"+username[i];
+//                    res+="'];\n";
+                    
+//                    res+="var ppic=['"+ppic[0];
+//                    for(i=1;i<ppic.length;i++)
+//                        res+="','"+ppic[i];
+//                    res+="'];\n";
+   
+                    res+="var checkinsCount=["+checkinsCount[0];
+                    for(i=1;i<checkinsCount.length;i++)
+                        res+="','"+checkinsCount[i];
+                    res+="];\n";
+                    
+                    res+="var timedata=[";
+                    for(i=0;i<timedata.length;i++)
+                    {
+                        res+="["+timedata[i][0];
+                        for(j=0;j<12;j++)
+                            res+=","+timedata[i][j];
+                        
+                        if(i==timedata.length-1)    res+="]";
+                        else                        res+="],";
+                    }
+                    res+="];\n";
+                    res+="var max_checkin="+max_checkin+";\n";
+                }
+                
+                xhr.send(res);
+            }
+            
+            
+            if(access_token!=null)
+            		load(0,0);
+            
+            
+            
+            </script>
+    </body>
+</html>
