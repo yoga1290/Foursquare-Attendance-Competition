@@ -1,4 +1,4 @@
-! [Foursquare app](readme.png)
+![Foursquare app](readme.png)
 
 # Introduction & background:
 
